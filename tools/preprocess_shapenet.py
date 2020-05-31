@@ -67,7 +67,7 @@ def parse_args():
     )
     parser.add_argument(
         "--shapenet_binvox_dir",
-        default="./datasets/shapenet/ShapeNetCore.v1.binvox",
+        default="./datasets/shapenet/ShapeNetCore.v1",
         help="Path to the Shapenet Core V1 binvox dir",
     )
     parser.add_argument(
@@ -172,6 +172,7 @@ def handle_model(args, sid, mid, i, N):
     # 128 x 128 x 128.
     voxel_path = os.path.join(binvox_dir, "model.presolid.binvox")
     if not os.path.isfile(voxel_path):
+        print (voxel_path)
         logger.info("WARNING: Skipping %s/%s, no voxels" % (sid, mid))
         return None
     with open(voxel_path, "rb") as f:

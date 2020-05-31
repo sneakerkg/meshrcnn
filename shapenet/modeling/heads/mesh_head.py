@@ -6,6 +6,8 @@ from torch.nn import functional as F
 
 from shapenet.utils.coords import project_verts
 
+import dgl
+from dgl.nn import GraphConv
 
 class MeshRefinementHead(nn.Module):
     def __init__(self, cfg):
@@ -75,7 +77,8 @@ class MeshRefinementStage(nn.Module):
                 input_dim = hidden_dim + vert_feat_dim + 3
             else:
                 input_dim = hidden_dim + 3
-            gconv = GraphConv(input_dim, hidden_dim, init=gconv_init, directed=False)
+            #gconv = GraphConv(input_dim, hidden_dim, init=gconv_init, directed=False)
+            gconv = GraphConv(input_dim, hidden_dim)
             self.gconvs.append(gconv)
 
         # initialization for bottleneck and vert_offset
@@ -119,9 +122,15 @@ class MeshRefinementStage(nn.Module):
             first_layer_feats.append(vert_feats)
         vert_feats = torch.cat(first_layer_feats, dim=1)
 
+        # Create DGL Graph
+        mesh_edges = meshes.edges_packed()
+        g = dgl.graph((mesh_edges[:, 0], mesh_edges[:, 1]))
+
         # Run graph conv layers
         for gconv in self.gconvs:
-            vert_feats_nopos = F.relu(gconv(vert_feats, meshes.edges_packed()))
+            #vert_feats_nopos = F.relu(gconv(vert_feats, meshes.edges_packed()))
+            #print (vert_feats.shape, mesh_edges.shape, g.number_of_edges())
+            vert_feats_nopos = F.relu(gconv(g, vert_feats))
             vert_feats = torch.cat([vert_feats_nopos, vert_pos_packed], dim=1)
 
         # Predict a new mesh by offsetting verts
